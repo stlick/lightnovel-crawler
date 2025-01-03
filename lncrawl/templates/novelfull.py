@@ -1,6 +1,7 @@
 import re
 from typing import Generator, Iterable
 from urllib.parse import urlencode
+from venv import logger
 
 from bs4 import BeautifulSoup, Tag
 
@@ -83,11 +84,12 @@ class NovelFullTemplate(SearchableSoupTemplate, ChapterOnlySoupTemplate):
        return " ".join(paragraphs).strip()
 
    def parse_genres(self, soup: BeautifulSoup) -> Generator[str, None, None]:
-       try:
-           # Seleciona diretamente o li que contém h3 com texto "Genre:"
-           genre_li = soup.select_one("ul.info.info-meta li:has(h3:contains('Genre:'))")
-           if genre_li:
-               for genre in genre_li.select("a"):
-                   yield genre.text.strip()
-       except Exception as e:
-           logger.warning(f"Error parsing genres: {e}")
+    try:
+        genre_li = soup.select_one("ul.info.info-meta li:has(h3:contains('Genre:'))")
+        if not genre_li:
+            return
+
+        for genre in genre_li.find_all('a', recursive=False):
+            yield genre.text.strip()
+    except Exception as e:
+        logger.warning(f"Error parsing genres: {e}")
