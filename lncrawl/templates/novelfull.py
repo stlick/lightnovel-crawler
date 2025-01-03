@@ -84,14 +84,14 @@ class NovelFullTemplate(SearchableSoupTemplate, ChapterOnlySoupTemplate):
        return " ".join(paragraphs).strip()
 
    def parse_genres(self, soup: BeautifulSoup) -> Generator[str, None, None]:
-    try:
-        genre_li = soup.find('li', lambda tag: tag.find('h3') and 'Genre:' in tag.find('h3').text)
-        if not genre_li:
-            return
+     try:
+       genre_li = soup.find('li', recursive=False, text=lambda text: text and 'Genre:' in text)
+       if not genre_li:
+           return
 
-        for genre in genre_li.find_all('a'):
-            genre_text = genre.text.strip()
-            if genre_text:
-                yield genre_text
-    except Exception as e:
-        logger.warning(f"Error parsing genres: {e}")
+       for genre in genre_li.find_all('a'):
+           genre_text = genre.text.strip()
+           if genre_text:
+               yield genre_text
+     except Exception as e:
+       logger.warning(f"Error parsing genres: {e}")
