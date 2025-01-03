@@ -1,3 +1,5 @@
+# general_browser_template.py
+
 import logging
 from typing import Generator, Union
 
@@ -33,6 +35,11 @@ class GeneralBrowserTemplate(BasicBrowserTemplate, GeneralSoupTemplate):
         except Exception as e:
             logger.warning("Failed to parse novel authors | %s", e)
 
+        try:
+            self.novel_synopsis = self.parse_synopsis(soup)
+        except Exception as e:
+            logger.warning("Failed to parse novel synopsis | %s", e)
+
         for item in self.parse_chapter_list(soup):
             if isinstance(item, Chapter):
                 self.chapters.append(item)
@@ -59,6 +66,11 @@ class GeneralBrowserTemplate(BasicBrowserTemplate, GeneralSoupTemplate):
         except Exception as e:
             logger.warning("Failed to parse novel authors | %s", e)
 
+        try:
+            self.novel_synopsis = self.parse_synopsis_in_browser()
+        except Exception as e:
+            logger.warning("Failed to parse novel synopsis | %s", e)
+
         for item in self.parse_chapter_list_in_browser():
             if isinstance(item, Chapter):
                 self.chapters.append(item)
@@ -76,6 +88,10 @@ class GeneralBrowserTemplate(BasicBrowserTemplate, GeneralSoupTemplate):
     def parse_authors_in_browser(self) -> Generator[Tag, None, None]:
         """Parse and return the novel author in the browser"""
         yield from self.parse_authors(self.browser.soup)
+
+    def parse_synopsis_in_browser(self) -> str:
+        """Parse and return the novel synopsis in the browser"""
+        return self.parse_synopsis(self.browser.soup)
 
     def parse_chapter_list_in_browser(
         self,
@@ -100,7 +116,3 @@ class GeneralBrowserTemplate(BasicBrowserTemplate, GeneralSoupTemplate):
     def select_chapter_body_in_browser(self) -> Tag:
         """Select the tag containing the chapter text in the browser"""
         return self.select_chapter_body(self.browser.soup)
-
-    def parse_synopsis_in_browser(self) -> str:
-        """Parse and return the novel synopsis in the browser"""
-        return self.parse_synopsis(self.browser.soup)
