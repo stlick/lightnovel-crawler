@@ -85,7 +85,7 @@ class NovelFullTemplate(SearchableSoupTemplate, ChapterOnlySoupTemplate):
 
    def parse_genres(self, soup: BeautifulSoup) -> Generator[str, None, None]:
     try:
-        genre_li = soup.select_one("ul.info.info-meta li:has(h3:contains('Genre:'))")
+        genre_li = soup.select_one("ul.info.info-meta li:has(h3:-soup-contains('Genre:'))")
         if not genre_li:
             return
 
