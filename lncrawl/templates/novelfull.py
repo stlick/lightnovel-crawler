@@ -83,7 +83,9 @@ class NovelFullTemplate(SearchableSoupTemplate, ChapterOnlySoupTemplate):
         return " ".join(paragraphs).strip()
 
     def parse_genres(self, soup: BeautifulSoup) -> Generator[str, None, None]:
-        genre_section = soup.select_one("ul.info.info-meta li:has(h3:contains('Genre:'))")
+        genre_section = soup.select_one("ul.info.info-meta")
         if genre_section:
-            for genre in genre_section.select("a"):
+           genre_li = genre_section.find('li', lambda tag: tag.find('h3') and 'Genre:' in tag.find('h3').text)
+        if genre_li:
+            for genre in genre_li.find_all('a'):
                 yield genre.text.strip()

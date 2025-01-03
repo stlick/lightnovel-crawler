@@ -36,7 +36,7 @@ class GeneralBrowserTemplate(BasicBrowserTemplate, GeneralSoupTemplate):
             logger.warning("Failed to parse novel authors | %s", e)
 
         try:
-            self.novel_genres = list(self.parse_genres_in_browser())
+            self.novel_genres = list(self.parse_genres(soup))
         except Exception as e:
             logger.warning("Failed to parse novel genres | %s", e)
 
@@ -70,6 +70,11 @@ class GeneralBrowserTemplate(BasicBrowserTemplate, GeneralSoupTemplate):
             self.novel_author = ", ".join(authors)
         except Exception as e:
             logger.warning("Failed to parse novel authors | %s", e)
+
+        try:
+            self.novel_genres = list(self.parse_genres_in_browser())
+        except Exception as e:
+            logger.warning("Failed to parse novel genres | %s", e)
 
         try:
             self.novel_synopsis = self.parse_synopsis_in_browser()
