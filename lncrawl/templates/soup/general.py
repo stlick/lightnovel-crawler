@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 class GeneralSoupTemplate(Crawler):
     def __init__(self, workers: Optional[int] = None, parser: Optional[str] = None):
-        # Inicializa variáveis da classe base
-        self.novel_synopsis = ""  # Inicializa a sinopse vazia
+        self.novel_synopsis = ""
+        self.novel_genres = []
         super().__init__(workers=workers, parser=parser)
 
     def read_novel_info(self) -> None:
@@ -42,6 +42,11 @@ class GeneralSoupTemplate(Crawler):
             self.novel_synopsis = self.parse_synopsis(soup)
         except Exception as e:
             logger.warning("Failed to parse novel synopsis | %s", e)
+
+        try:
+            self.novel_genres = list(self.parse_genres(soup))
+        except Exception as e:
+            logger.warning("Failed to parse novel genres | %s", e)
 
         for item in self.parse_chapter_list(soup):
             if isinstance(item, Chapter):
@@ -70,6 +75,11 @@ class GeneralSoupTemplate(Crawler):
     @abstractmethod
     def parse_synopsis(self, soup: BeautifulSoup) -> str:
         """Parse and return the novel synopsis"""
+        raise NotImplementedError()
+
+    @abstractmethod
+    def parse_genres(self, soup: BeautifulSoup) -> Generator[str, None, None]:
+        """Parse and return the novel genres"""
         raise NotImplementedError()
 
     @abstractmethod

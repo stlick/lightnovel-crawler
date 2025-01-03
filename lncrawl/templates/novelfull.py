@@ -1,5 +1,5 @@
 import re
-from typing import Iterable
+from typing import Generator, Iterable
 from urllib.parse import urlencode
 
 from bs4 import BeautifulSoup, Tag
@@ -81,3 +81,9 @@ class NovelFullTemplate(SearchableSoupTemplate, ChapterOnlySoupTemplate):
         # Junta todos os parágrafos em um único texto
         paragraphs = [p.text.strip() for p in tag.select("p")]
         return " ".join(paragraphs).strip()
+
+    def parse_genres(self, soup: BeautifulSoup) -> Generator[str, None, None]:
+        genre_section = soup.select_one("ul.info.info-meta li:has(h3:contains('Genre:'))")
+        if genre_section:
+            for genre in genre_section.select("a"):
+                yield genre.text.strip()
