@@ -72,3 +72,12 @@ class NovelFullTemplate(SearchableSoupTemplate, ChapterOnlySoupTemplate):
 
     def select_chapter_body(self, soup: BeautifulSoup) -> Tag:
         return soup.select_one("#chr-content, #chapter-content")
+
+    def parse_synopsis(self, soup: BeautifulSoup) -> str:
+    tag = soup.select_one("div.desc-text")
+    if not tag:
+        return ""
+
+    # Junta todos os parágrafos em um único texto
+    paragraphs = [p.text.strip() for p in tag.select("p")]
+    return " ".join(paragraphs).strip()
