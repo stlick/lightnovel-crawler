@@ -85,11 +85,13 @@ class NovelFullTemplate(SearchableSoupTemplate, ChapterOnlySoupTemplate):
 
    def parse_genres(self, soup: BeautifulSoup) -> Generator[str, None, None]:
     try:
-        genre_li = soup.select_one("ul.info.info-meta li:has(h3:-soup-contains('Genre:'))")
+        genre_li = soup.find('li', lambda tag: tag.find('h3') and 'Genre:' in tag.find('h3').text)
         if not genre_li:
             return
 
-        for genre in genre_li.find_all('a', recursive=False):
-            yield genre.text.strip()
+        for genre in genre_li.find_all('a'):
+            genre_text = genre.text.strip()
+            if genre_text:
+                yield genre_text
     except Exception as e:
         logger.warning(f"Error parsing genres: {e}")
