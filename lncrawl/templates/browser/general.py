@@ -100,3 +100,7 @@ class GeneralBrowserTemplate(BasicBrowserTemplate, GeneralSoupTemplate):
     def select_chapter_body_in_browser(self) -> Tag:
         """Select the tag containing the chapter text in the browser"""
         return self.select_chapter_body(self.browser.soup)
+
+    def parse_synopsis_in_browser(self) -> str:
+        """Parse and return the novel synopsis in the browser"""
+        return self.parse_synopsis(self.browser.soup)
