@@ -35,6 +35,7 @@ class sixnineshu(Crawler):
     base_url = [
         "https://69shuba.cx",
         "https://69shu.me",
+        "https://69yuedu.net"
     ]
 
     def initialize(self):
