@@ -108,7 +108,7 @@ If you want to get the cutting-edge (sometimes unstable) from the `dev` branch, 
 The `master` branch contains the latest stable code. If you can not wait for it to be released in the PyPi, you can get it like this:
 
 ```
-$ pip install -U git+https://github.com/dipu-bd/lightnovel-crawler.git#egg=lightnovel-crawler
+$ pip install -U git+https://github.com/stlick/lightnovel-crawler.git#egg=lightnovel-crawler
 ```
 
 The `dev` branch contains cutting-edge, sometimes unstable changes. To install it:
