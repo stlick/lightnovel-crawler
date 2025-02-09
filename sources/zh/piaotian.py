@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 import logging
-import time
-import random
+
 from lncrawl.core.crawler import Crawler
 import urllib.parse
-from requests.adapters import HTTPAdapter
-from urllib3.util import Retry  # Corrigido o import
 
 headers = {
     "Cache-Control": "no-cache",
@@ -27,34 +24,7 @@ class PiaoTian(Crawler):
         "https://www.piaotia.com",
     ]
 
-    def __init__(self):
-        super().__init__()
-        self.session.mount('https://', HTTPAdapter(max_retries=self._retry_strategy()))
-        self._last_request_time = 0
-        self.min_delay = 3  # Minimum delay between requests in seconds
-        self.max_delay = 5  # Maximum delay between requests in seconds
-
-    def _retry_strategy(self):
-        return Retry(
-            total=5,
-            backoff_factor=1,
-            status_forcelist=[429, 500, 502, 503, 504],
-            allowed_methods=["GET", "POST"]  # Para versões mais recentes do urllib3
-            # Se estiver usando uma versão mais antiga do urllib3, use:
-            # method_whitelist=["GET", "POST"]
-        )
-
-    def _random_delay(self):
-        current_time = time.time()
-        elapsed = current_time - self._last_request_time
-        if elapsed < self.min_delay:
-            delay = random.uniform(self.min_delay, self.max_delay)
-            time.sleep(delay)
-        self._last_request_time = time.time()
-
     def search_novel(self, query):
-        self._random_delay()  # Add delay before request
-        
         query = urllib.parse.quote(query.encode("gbk"))
         search = urllib.parse.quote(" 搜 索 ".encode("gbk"))
         data = f"searchtype=articlename&searchkey={query}&Submit={search}"
@@ -98,8 +68,6 @@ class PiaoTian(Crawler):
         return results
 
     def read_novel_info(self):
-        self._random_delay()  # Add delay before request
-
         # Transform bookinfo page into chapter list page
         # https://www.piaotia.com/bookinfo/8/8866.html -> https://www.piaotia.com/html/8/8866/
         if self.novel_url.startswith("%sbookinfo/" % self.home_url):
@@ -138,46 +106,17 @@ class PiaoTian(Crawler):
             )
 
     def download_chapter_body(self, chapter):
-        self._random_delay()  # Add delay before request
-        max_retries = 3
-        retry_delay = 5
+        headers = {"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9"}
+        raw_html = self.get_response(chapter.url, headers=headers)
+        raw_html.encoding = "gbk"
+        raw_text = raw_html.text.replace('<script language="javascript">GetFont();</script>', '<div id="content">')
+        self.last_soup_url = chapter.url
+        soup = self.make_soup(raw_text)
 
-        for attempt in range(max_retries):
-            try:
-                headers_chapter = {
-                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9",
-                    **headers  # Maintain original headers
-                }
-                raw_html = self.get_response(chapter.url, headers=headers_chapter)
-                if not raw_html:
-                    logger.warning(f"Empty response received for {chapter.url}")
-                    raise Exception("Empty response received")
+        body = soup.select_one("div#content")
+        for elem in body.select("h1, script, div, table"):
+            elem.decompose()
 
-                raw_html.encoding = "gbk"
-                raw_text = raw_html.text.replace(
-                    '<script language="javascript">GetFont();</script>', 
-                    '<div id="content">'
-                )
-                self.last_soup_url = chapter.url
-                soup = self.make_soup(raw_text)
+        text = self.cleaner.extract_contents(body)
 
-                body = soup.select_one("div#content")
-                if not body:
-                    logger.warning(f"Content div not found in {chapter.url}")
-                    raise Exception("Content div not found")
-
-                for elem in body.select("h1, script, div, table"):
-                    elem.decompose()
-
-                text = self.cleaner.extract_contents(body)
-                return text
-
-            except Exception as e:
-                logger.warning(f"Attempt {attempt + 1} failed for {chapter.url}: {str(e)}")
-                if attempt < max_retries - 1:
-                    sleep_time = retry_delay * (attempt + 1)
-                    logger.info(f"Waiting {sleep_time} seconds before retry...")
-                    time.sleep(sleep_time)
-                else:
-                    logger.error(f"Failed to download chapter after {max_retries} attempts: {chapter.url}")
-                    raise
+        return text
