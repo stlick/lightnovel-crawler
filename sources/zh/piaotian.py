@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import time
+import random
 from lncrawl.core.crawler import Crawler
 import urllib.parse
 
@@ -9,6 +10,7 @@ headers = {
     "Content-Type": "application/x-www-form-urlencoded",
     "Origin": "https://www.piaotia.com",
     "Referer": "https://www.piaotia.com/modules/article/search.php",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 }
 
 logger = logging.getLogger(__name__)
@@ -19,13 +21,27 @@ cover_image_url = "%sfiles/article/image/%s/%s/%ss.jpg"
 
 class PiaoTian(Crawler):
     base_url = [
-        "https://www.piaotian.com",
+        "https://www.piaotia.com",
         "https://www.ptwxz.com",
         "https://www.piaotia.com",
     ]
 
+    def __init__(self):
+        super().__init__()
+        self._last_request_time = 0
+        self.min_delay = 10  # Aumentado para 10 segundos
+        self.max_delay = 15  # Aumentado para 15 segundos
+
     def _wait_between_requests(self):
-        time.sleep(3)  # Simple 3 second delay between requests
+        current_time = time.time()
+        elapsed = current_time - self._last_request_time
+        
+        # Se passou menos tempo que o delay mínimo
+        if elapsed < self.min_delay:
+            delay = random.uniform(self.min_delay, self.max_delay)
+            time.sleep(delay)
+        
+        self._last_request_time = time.time()
 
     def search_novel(self, query):
         self._wait_between_requests()
@@ -111,11 +127,16 @@ class PiaoTian(Crawler):
             )
 
     def download_chapter_body(self, chapter):
-        max_retries = 3
+        max_retries = 5  # Aumentado número de tentativas
+        base_delay = 15  # Delay base aumentado para 15 segundos
+        
         for attempt in range(max_retries):
             try:
                 self._wait_between_requests()
-                headers_chapter = {"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9"}
+                headers_chapter = {
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9",
+                    "User-Agent": headers["User-Agent"]
+                }
                 raw_html = self.get_response(chapter.url, headers=headers_chapter)
                 raw_html.encoding = "gbk"
                 raw_text = raw_html.text.replace('<script language="javascript">GetFont();</script>', '<div id="content">')
@@ -132,6 +153,9 @@ class PiaoTian(Crawler):
             except Exception as e:
                 logger.warning(f"Attempt {attempt + 1} failed for {chapter.url}: {str(e)}")
                 if attempt < max_retries - 1:
-                    time.sleep(5 * (attempt + 1))  # Exponential backoff
+                    # Exponential backoff com jitter
+                    sleep_time = (base_delay * (2 ** attempt)) + random.uniform(1, 5)
+                    logger.info(f"Waiting {sleep_time:.2f} seconds before retry...")
+                    time.sleep(sleep_time)
                 else:
                     raise
