@@ -3,7 +3,7 @@ import time
 import random
 from typing import Optional
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from urllib3.util.retry import Retry  # Import corrigido
 
 class PiaoTian(Crawler):
     base_url = [
