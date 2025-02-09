@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
-
+import time
 from lncrawl.core.crawler import Crawler
 import urllib.parse
 
@@ -24,7 +24,11 @@ class PiaoTian(Crawler):
         "https://www.piaotia.com",
     ]
 
+    def _wait_between_requests(self):
+        time.sleep(3)  # Simple 3 second delay between requests
+
     def search_novel(self, query):
+        self._wait_between_requests()
         query = urllib.parse.quote(query.encode("gbk"))
         search = urllib.parse.quote(" 搜 索 ".encode("gbk"))
         data = f"searchtype=articlename&searchkey={query}&Submit={search}"
@@ -68,6 +72,7 @@ class PiaoTian(Crawler):
         return results
 
     def read_novel_info(self):
+        self._wait_between_requests()
         # Transform bookinfo page into chapter list page
         # https://www.piaotia.com/bookinfo/8/8866.html -> https://www.piaotia.com/html/8/8866/
         if self.novel_url.startswith("%sbookinfo/" % self.home_url):
@@ -106,17 +111,27 @@ class PiaoTian(Crawler):
             )
 
     def download_chapter_body(self, chapter):
-        headers = {"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9"}
-        raw_html = self.get_response(chapter.url, headers=headers)
-        raw_html.encoding = "gbk"
-        raw_text = raw_html.text.replace('<script language="javascript">GetFont();</script>', '<div id="content">')
-        self.last_soup_url = chapter.url
-        soup = self.make_soup(raw_text)
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                self._wait_between_requests()
+                headers_chapter = {"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9"}
+                raw_html = self.get_response(chapter.url, headers=headers_chapter)
+                raw_html.encoding = "gbk"
+                raw_text = raw_html.text.replace('<script language="javascript">GetFont();</script>', '<div id="content">')
+                self.last_soup_url = chapter.url
+                soup = self.make_soup(raw_text)
 
-        body = soup.select_one("div#content")
-        for elem in body.select("h1, script, div, table"):
-            elem.decompose()
+                body = soup.select_one("div#content")
+                for elem in body.select("h1, script, div, table"):
+                    elem.decompose()
 
-        text = self.cleaner.extract_contents(body)
+                text = self.cleaner.extract_contents(body)
+                return text
 
-        return text
+            except Exception as e:
+                logger.warning(f"Attempt {attempt + 1} failed for {chapter.url}: {str(e)}")
+                if attempt < max_retries - 1:
+                    time.sleep(5 * (attempt + 1))  # Exponential backoff
+                else:
+                    raise
