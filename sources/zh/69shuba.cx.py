@@ -36,7 +36,8 @@ class sixnineshu(Crawler):
         "https://69shuba.cx",
         "https://69shu.me",
         "https://69yuedu.net",
-        "https://69shuba.com"
+        "https://69shuba.com",
+        "https://www.69yuedu.net/"
     ]
 
     def initialize(self):
